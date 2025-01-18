@@ -8,6 +8,7 @@ import 'package:cookbook_joel/pages/forms_page.dart';
 import 'package:cookbook_joel/pages/images_page.dart';
 import 'package:cookbook_joel/pages/lists_page.dart';
 import 'package:cookbook_joel/pages/navigation_page.dart';
+import 'package:cookbook_joel/pages/networking/main_networking.dart';
 
 void main() {
   runApp(const cookbook_joel());
@@ -83,6 +84,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       'route': const NavigationPage(),
       'color': Colors.red,
       'description': '',
+    },
+    {
+      'title': 'Networking',
+      'icon': 'assets/lottie/networking.json',
+      'route': const MainNetworking(),
+      'color': Colors.teal,
+      'description': 'Rentadores y Rentadoras',
     },
   ];
 
