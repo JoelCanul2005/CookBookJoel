@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:typed_data';
+import 'package:cookbook_joel/pages/networking/producto_form.dart';
+
 
 class RentadorasHomePage extends StatefulWidget {
   const RentadorasHomePage({super.key});
@@ -57,6 +60,43 @@ class _RentadorasHomePageState extends State<RentadorasHomePage> {
   }
 
   Future<void> eliminarProducto(int id) async {
+    bool confirmar = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirmar eliminación'),
+          content: const Text('¿Estás seguro de que deseas eliminar este producto?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Eliminar'),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+
+    if (!confirmar) return;
+
+    // Mostrar indicador de carga
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
+
     try {
       final token = await getToken();
       if (token == null) throw Exception('No hay token de autenticación');
@@ -65,23 +105,45 @@ class _RentadorasHomePageState extends State<RentadorasHomePage> {
         Uri.parse('$baseUrl/api/productos/delete/$id'),
         headers: {
           'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
         },
       );
+
+      // Cerrar el indicador de carga
+      if (!mounted) return;
+      Navigator.pop(context);
 
       if (response.statusCode == 200) {
         setState(() {
           productos.removeWhere((producto) => producto['id'] == id);
         });
-        if (!mounted) return;
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Producto eliminado con éxito')),
+          const SnackBar(
+            content: Text('Producto eliminado con éxito'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
         );
+
+        // Registrar la eliminación
+        print('Producto ID:$id eliminado el: ${DateTime.now().toUtc().toString()}');
+        print('Usuario: JoelCanul2005');
+
       } else {
         throw Exception('Error al eliminar el producto');
       }
     } catch (e) {
+      // Cerrar el indicador de carga si hubo un error
+      if (!mounted) return;
+      Navigator.pop(context);
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
       );
     }
   }
@@ -166,11 +228,167 @@ class _RentadorasHomePageState extends State<RentadorasHomePage> {
     );
   }
 
+  // En rentadoras_home_page.dart, actualiza el método _mostrarFormularioAgregar:
+
   Future<void> _mostrarFormularioAgregar() async {
-    // Implementar formulario para agregar producto
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Agregar Producto',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ProductoForm(
+                onSubmit: (productoData) async {
+                  try {
+                    final token = await getToken();
+                    if (token == null) throw Exception('No hay token de autenticación');
+
+                    // Decodificar el token para obtener el rentador_id
+                    final parts = token.split('.');
+                    if (parts.length != 3) throw Exception('Token inválido');
+
+                    final payload = json.decode(
+                        utf8.decode(
+                            base64Url.decode(base64Url.normalize(parts[1]))
+                        )
+                    );
+
+                    // Agregar el rentador_id a los datos del producto
+                    final dataToSend = {
+                      ...productoData,
+                      'rentador_id': payload['id'], // Asumiendo que el ID está en el token
+                    };
+
+                    print('Enviando datos: ${json.encode(dataToSend)}'); // Debug
+
+                    final response = await http.post(
+                      Uri.parse('$baseUrl/api/productos/agregar'),
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer $token',
+                      },
+                      body: json.encode(dataToSend),
+                    );
+
+                    print('Status code: ${response.statusCode}'); // Debug
+                    print('Response body: ${response.body}'); // Debug
+
+                    if (response.statusCode == 201) {
+                      if (!mounted) return;
+                      Navigator.pop(context);
+                      cargarProductos();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Producto agregado con éxito'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+
+                      // Registro de la operación
+                      print('Producto agregado el: ${DateTime.now().toUtc().toString()}');
+                      print('Usuario: JoelCanul2005');
+                    } else {
+                      final errorResponse = json.decode(response.body);
+                      throw Exception(errorResponse['error'] ?? 'Error al agregar el producto');
+                    }
+                  } catch (e) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: ${e.toString()}'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _mostrarFormularioEdicion(Map<String, dynamic> producto) async {
-    // Implementar formulario para editar producto
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Editar Producto',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ProductoForm(
+                producto: producto,
+                onSubmit: (productoData) async {
+                  try {
+                    final token = await getToken();
+                    if (token == null) throw Exception('No hay token de autenticación');
+
+                    print('Enviando datos de actualización: ${json.encode(productoData)}'); // Debug
+
+                    final response = await http.put(
+                      Uri.parse('$baseUrl/api/productos/update/${producto['id']}'),
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer $token',
+                      },
+                      body: json.encode(productoData),
+                    );
+
+                    print('Status code: ${response.statusCode}'); // Debug
+                    print('Response body: ${response.body}'); // Debug
+
+                    if (response.statusCode == 200) {
+                      if (!mounted) return;
+                      Navigator.pop(context);
+                      cargarProductos();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Producto actualizado con éxito'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+
+                      // Registro de la operación
+                      print('Producto actualizado el: ${DateTime.now().toUtc().toString()}');
+                      print('Usuario: JoelCanul2005');
+                    } else {
+                      throw Exception('Error ${response.statusCode}: ${response.body}');
+                    }
+                  } catch (e) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: ${e.toString()}'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
