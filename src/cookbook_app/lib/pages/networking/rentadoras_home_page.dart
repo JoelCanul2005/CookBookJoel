@@ -231,6 +231,20 @@ class _RentadorasHomePageState extends State<RentadorasHomePage> {
   // En rentadoras_home_page.dart, actualiza el método _mostrarFormularioAgregar:
 
   Future<void> _mostrarFormularioAgregar() async {
+    // Primero verificamos si hay productos para obtener el rentador_id
+    if (productos.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: No se pudo obtener el ID del rentador'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Obtenemos el rentador_id del primer producto
+    final rentadorId = productos[0]['rentador_id'];
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -253,20 +267,10 @@ class _RentadorasHomePageState extends State<RentadorasHomePage> {
                     final token = await getToken();
                     if (token == null) throw Exception('No hay token de autenticación');
 
-                    // Decodificar el token para obtener el rentador_id
-                    final parts = token.split('.');
-                    if (parts.length != 3) throw Exception('Token inválido');
-
-                    final payload = json.decode(
-                        utf8.decode(
-                            base64Url.decode(base64Url.normalize(parts[1]))
-                        )
-                    );
-
-                    // Agregar el rentador_id a los datos del producto
+                    // Agregamos el rentador_id a los datos del producto
                     final dataToSend = {
                       ...productoData,
-                      'rentador_id': payload['id'], // Asumiendo que el ID está en el token
+                      'rentador_id': rentadorId,
                     };
 
                     print('Enviando datos: ${json.encode(dataToSend)}'); // Debug
@@ -286,7 +290,7 @@ class _RentadorasHomePageState extends State<RentadorasHomePage> {
                     if (response.statusCode == 201) {
                       if (!mounted) return;
                       Navigator.pop(context);
-                      cargarProductos();
+                      cargarProductos(); // Recargar la lista
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Producto agregado con éxito'),
@@ -294,7 +298,7 @@ class _RentadorasHomePageState extends State<RentadorasHomePage> {
                         ),
                       );
 
-                      // Registro de la operación
+                      // Log de la operación
                       print('Producto agregado el: ${DateTime.now().toUtc().toString()}');
                       print('Usuario: JoelCanul2005');
                     } else {
