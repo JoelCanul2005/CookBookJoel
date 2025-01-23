@@ -114,13 +114,45 @@ class _RentadorasAuthPageState extends State<RentadorasAuthPage>
         final data = json.decode(response.body);
         final token = data['token'];
 
-        // Guardar el token
+        // Extraer el ID del token JWT
+        String? rentadorId;
+        try {
+          // Dividir el token en sus partes (header.payload.signature)
+          final parts = token.split('.');
+          if (parts.length > 1) {
+            // Decodificar el payload (segunda parte)
+            final payload = json.decode(
+              utf8.decode(
+                base64Url.decode(
+                  base64Url.normalize(parts[1]),
+                ),
+              ),
+            );
+            print('Payload del token: $payload'); // Para debug
+            rentadorId = payload['id']?.toString() ?? payload['sub']?.toString();
+          }
+        } catch (e) {
+          print('Error decodificando token: $e');
+        }
+
+        if (rentadorId == null) {
+          print('No se pudo extraer el ID del token, usando ID por defecto');
+          // Si no podemos obtener el ID del token, usamos el username como identificador temporal
+          rentadorId = _usernameController.text;
+        }
+
+        // Guardar el token y el ID
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('auth_token', token);
+        await prefs.setString('rentador_id', rentadorId);
+
+        // Log de inicio de sesión
+        print('Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): ${DateTime.now().toUtc().toString()}');
+        print('Current User\'s Login: ${_usernameController.text}');
+        print('Rentador ID: $rentadorId');
 
         if (!mounted) return;
 
-        // Navegar al home y remover todas las rutas anteriores
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (context) => const RentadorasHomePage()),

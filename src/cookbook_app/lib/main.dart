@@ -10,6 +10,7 @@ import 'package:cookbook_joel/pages/lists_page.dart';
 import 'package:cookbook_joel/pages/navigation_page.dart';
 import 'package:cookbook_joel/pages/networking/main_networking.dart';
 import 'package:cookbook_joel/pages/animations_page.dart';
+import 'package:cookbook_joel/pages/persistence_page.dart';
 
 void main() {
   runApp(const cookbook_joel());
@@ -99,6 +100,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       'route': const AnimationsPage(),
       'color': Colors.pink,
       'description': 'Ejemplos de animaciones en Flutter',
+    },
+    {
+      'title': 'Persistencia',
+      'icon': 'assets/lottie/persistence.json', // Necesitarás agregar este archivo
+      'route': const PersistencePage(),
+      'color': Colors.green,
+      'description': 'SQLite, archivos y preferencias',
     },
   ];
 

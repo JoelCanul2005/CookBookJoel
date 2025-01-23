@@ -231,96 +231,93 @@ class _RentadorasHomePageState extends State<RentadorasHomePage> {
   // En rentadoras_home_page.dart, actualiza el método _mostrarFormularioAgregar:
 
   Future<void> _mostrarFormularioAgregar() async {
-    // Primero verificamos si hay productos para obtener el rentador_id
-    if (productos.isEmpty) {
+    try {
+      final token = await getToken();
+      if (token == null) throw Exception('No hay token de autenticación');
+
+      // Obtener el ID del rentador de SharedPreferences como string
+      final prefs = await SharedPreferences.getInstance();
+      final rentadorId = prefs.getString('rentador_id');
+
+      if (rentadorId == null) {
+        throw Exception('No se pudo obtener el ID del rentador');
+      }
+
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Agregar Producto',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ProductoForm(
+                  onSubmit: (productoData) async {
+                    try {
+                      final dataToSend = {
+                        ...productoData,
+                        'rentador_id': rentadorId, // Ahora enviamos el ID como string
+                      };
+
+                      // Log de la operación
+                      print('Current Date and Time (UTC - YYYY-MM-DD HH:MM:SS formatted): ${DateTime.now().toUtc().toString()}');
+                      print('Current User\'s Login: JoelCanul2005');
+                      print('Enviando datos: ${json.encode(dataToSend)}');
+
+                      final response = await http.post(
+                        Uri.parse('$baseUrl/api/productos/agregar'),
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': 'Bearer $token',
+                        },
+                        body: json.encode(dataToSend),
+                      );
+
+                      if (response.statusCode == 201) {
+                        if (!mounted) return;
+                        Navigator.pop(context);
+                        cargarProductos();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Producto agregado con éxito'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      } else {
+                        throw Exception('Error al agregar el producto');
+                      }
+                    } catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Error: ${e.toString()}'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error: No se pudo obtener el ID del rentador'),
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
           backgroundColor: Colors.red,
         ),
       );
-      return;
     }
-
-    // Obtenemos el rentador_id del primer producto
-    final rentadorId = productos[0]['rentador_id'];
-
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Agregar Producto',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ProductoForm(
-                onSubmit: (productoData) async {
-                  try {
-                    final token = await getToken();
-                    if (token == null) throw Exception('No hay token de autenticación');
-
-                    // Agregamos el rentador_id a los datos del producto
-                    final dataToSend = {
-                      ...productoData,
-                      'rentador_id': rentadorId,
-                    };
-
-                    print('Enviando datos: ${json.encode(dataToSend)}'); // Debug
-
-                    final response = await http.post(
-                      Uri.parse('$baseUrl/api/productos/agregar'),
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer $token',
-                      },
-                      body: json.encode(dataToSend),
-                    );
-
-                    print('Status code: ${response.statusCode}'); // Debug
-                    print('Response body: ${response.body}'); // Debug
-
-                    if (response.statusCode == 201) {
-                      if (!mounted) return;
-                      Navigator.pop(context);
-                      cargarProductos(); // Recargar la lista
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Producto agregado con éxito'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-
-                      // Log de la operación
-                      print('Producto agregado el: ${DateTime.now().toUtc().toString()}');
-                      print('Usuario: JoelCanul2005');
-                    } else {
-                      final errorResponse = json.decode(response.body);
-                      throw Exception(errorResponse['error'] ?? 'Error al agregar el producto');
-                    }
-                  } catch (e) {
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error: ${e.toString()}'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   Future<void> _mostrarFormularioEdicion(Map<String, dynamic> producto) async {

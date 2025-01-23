@@ -1,4 +1,3 @@
-// producto_form.dart
 import 'package:flutter/material.dart';
 
 class ProductoForm extends StatefulWidget {
@@ -24,6 +23,23 @@ class _ProductoFormState extends State<ProductoForm> {
   final _materialController = TextEditingController();
   final _imagenController = TextEditingController();
   bool _esPromocion = false;
+
+  final _inputDecoration = const InputDecoration(
+    labelStyle: TextStyle(color: Colors.white),
+    enabledBorder: UnderlineInputBorder(
+      borderSide: BorderSide(color: Colors.white70),
+    ),
+    focusedBorder: UnderlineInputBorder(
+      borderSide: BorderSide(color: Colors.white),
+    ),
+    errorBorder: UnderlineInputBorder(
+      borderSide: BorderSide(color: Colors.redAccent),
+    ),
+    focusedErrorBorder: UnderlineInputBorder(
+      borderSide: BorderSide(color: Colors.redAccent),
+    ),
+    errorStyle: TextStyle(color: Colors.redAccent),
+  );
 
   @override
   void initState() {
@@ -59,7 +75,8 @@ class _ProductoFormState extends State<ProductoForm> {
         children: [
           TextFormField(
             controller: _nombreController,
-            decoration: const InputDecoration(labelText: 'Nombre'),
+            style: const TextStyle(color: Colors.white),
+            decoration: _inputDecoration.copyWith(labelText: 'Nombre'),
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Por favor ingrese un nombre';
@@ -70,7 +87,8 @@ class _ProductoFormState extends State<ProductoForm> {
           const SizedBox(height: 10),
           TextFormField(
             controller: _descripcionController,
-            decoration: const InputDecoration(labelText: 'Descripción'),
+            style: const TextStyle(color: Colors.white),
+            decoration: _inputDecoration.copyWith(labelText: 'Descripción'),
             maxLines: 3,
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -82,7 +100,8 @@ class _ProductoFormState extends State<ProductoForm> {
           const SizedBox(height: 10),
           TextFormField(
             controller: _precioController,
-            decoration: const InputDecoration(labelText: 'Precio'),
+            style: const TextStyle(color: Colors.white),
+            decoration: _inputDecoration.copyWith(labelText: 'Precio'),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -97,7 +116,8 @@ class _ProductoFormState extends State<ProductoForm> {
           const SizedBox(height: 10),
           TextFormField(
             controller: _cantidadController,
-            decoration: const InputDecoration(labelText: 'Cantidad disponible'),
+            style: const TextStyle(color: Colors.white),
+            decoration: _inputDecoration.copyWith(labelText: 'Cantidad disponible'),
             keyboardType: TextInputType.number,
             validator: (value) {
               if (value == null || value.isEmpty) {
@@ -112,7 +132,8 @@ class _ProductoFormState extends State<ProductoForm> {
           const SizedBox(height: 10),
           TextFormField(
             controller: _materialController,
-            decoration: const InputDecoration(labelText: 'Tipo de material'),
+            style: const TextStyle(color: Colors.white),
+            decoration: _inputDecoration.copyWith(labelText: 'Tipo de material'),
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Por favor ingrese el tipo de material';
@@ -123,11 +144,15 @@ class _ProductoFormState extends State<ProductoForm> {
           const SizedBox(height: 10),
           TextFormField(
             controller: _imagenController,
-            decoration: const InputDecoration(labelText: 'URL de la imagen'),
+            style: const TextStyle(color: Colors.white),
+            decoration: _inputDecoration.copyWith(labelText: 'URL de la imagen'),
           ),
           const SizedBox(height: 10),
           SwitchListTile(
-            title: const Text('Es promoción'),
+            title: const Text(
+              'Es promoción',
+              style: TextStyle(color: Colors.white),
+            ),
             value: _esPromocion,
             onChanged: (bool value) {
               setState(() {
@@ -137,6 +162,10 @@ class _ProductoFormState extends State<ProductoForm> {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              foregroundColor: Colors.white,
+              backgroundColor: Colors.blue,
+            ),
             onPressed: () {
               if (_formKey.currentState!.validate()) {
                 final productoData = {
@@ -153,7 +182,10 @@ class _ProductoFormState extends State<ProductoForm> {
                 widget.onSubmit(productoData);
               }
             },
-            child: Text(widget.producto == null ? 'Agregar' : 'Actualizar'),
+            child: Text(
+              widget.producto == null ? 'Agregar' : 'Actualizar',
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
