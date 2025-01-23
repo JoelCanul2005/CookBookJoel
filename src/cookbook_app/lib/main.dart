@@ -9,6 +9,7 @@ import 'package:cookbook_joel/pages/images_page.dart';
 import 'package:cookbook_joel/pages/lists_page.dart';
 import 'package:cookbook_joel/pages/navigation_page.dart';
 import 'package:cookbook_joel/pages/networking/main_networking.dart';
+import 'package:cookbook_joel/pages/animations_page.dart';
 
 void main() {
   runApp(const cookbook_joel());
@@ -91,6 +92,13 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
       'route': const MainNetworking(),
       'color': Colors.teal,
       'description': 'Rentadores y Rentadoras',
+    },
+    {
+      'title': 'Animaciones',
+      'icon': 'assets/lottie/animations.json',
+      'route': const AnimationsPage(),
+      'color': Colors.pink,
+      'description': 'Ejemplos de animaciones en Flutter',
     },
   ];
 
