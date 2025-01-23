@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'rentadoras_auth_page.dart'; // Asegúrate que esta ruta sea correcta
+import 'rentadoras_auth_page.dart';
+import 'rentadores_auth_page.dart'; // Asegúrate de crear este archivo
 
 class MainNetworking extends StatelessWidget {
   const MainNetworking({super.key});
@@ -24,9 +25,10 @@ class MainNetworking extends StatelessWidget {
                   ),
                 ),
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Próximamente: Página de Rentadores'),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RentadoresAuthPage(), // Nueva página de autenticación para Rentadores
                     ),
                   );
                 },
@@ -47,7 +49,7 @@ class MainNetworking extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const RentadorasAuthPage(), // Asegúrate que este nombre coincida con tu clase
+                      builder: (context) => const RentadorasAuthPage(),
                     ),
                   );
                 },
