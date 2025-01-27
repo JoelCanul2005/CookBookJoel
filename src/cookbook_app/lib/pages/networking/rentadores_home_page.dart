@@ -22,30 +22,35 @@ class _RentadoresHomePageState extends State<RentadoresHomePage> {
   final TextEditingController _searchController = TextEditingController();
   bool isSearching = false;
 
-  // Airbnb style colors
-  static const Color primaryColor = Color(0xFFFF5A5F);
-  static const Color secondaryColor = Color(0xFF00A699);
-  static const Color backgroundColor = Color(0xFFF7F7F7);
-  static const Color textColor = Color(0xFF484848);
+  // Colores del tema
+  static const Color primaryColor = Color(0xFF511B00);
+  static const Color secondaryColor = Color(0xFF8B4513);
+  static const Color accentColor = Color(0xFFDDD9C6);
+  static const Color backgroundColor = Color(0xFFF5F2E8);
+  static const Color textColor = Color(0xFF2C1810);
+  static const Color cardColor = Color(0xFFFFFFFF);
 
-  // Airbnb style text themes
+  // Estilos de texto
   final TextStyle titleStyle = const TextStyle(
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: FontWeight.w600,
-    color: textColor,
-    letterSpacing: 0.3,
+    color: primaryColor,
+    letterSpacing: 0.5,
+    fontFamily: 'Playfair Display',
   );
 
   final TextStyle subtitleStyle = const TextStyle(
-    fontSize: 16,
-    color: Colors.grey,
-    letterSpacing: 0.2,
+    fontSize: 14,
+    color: secondaryColor,
+    letterSpacing: 0.3,
+    fontWeight: FontWeight.w500,
   );
 
   final TextStyle priceStyle = const TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.w600,
+    fontSize: 20,
+    fontWeight: FontWeight.w700,
     color: primaryColor,
+    fontFamily: 'Playfair Display',
   );
 
   @override
@@ -128,6 +133,11 @@ class _RentadoresHomePageState extends State<RentadoresHomePage> {
         SnackBar(
           content: Text(e.toString()),
           backgroundColor: primaryColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          margin: const EdgeInsets.all(16),
         ),
       );
     }
@@ -157,193 +167,282 @@ class _RentadoresHomePageState extends State<RentadoresHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundColor,
-      appBar: AppBar(
+        backgroundColor: backgroundColor,
+        appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: cardColor,
         title: !isSearching
-            ? Text('Explora Productos', style: titleStyle)
-            : TextField(
-          controller: _searchController,
-          decoration: InputDecoration(
-            hintText: 'Buscar productos...',
-            hintStyle: subtitleStyle,
-            border: InputBorder.none,
-          ),
-          style: TextStyle(color: textColor),
-          autofocus: true,
+        ? Text('Explora Productos', style: titleStyle)
+        : TextField(
+    controller: _searchController,
+    decoration: InputDecoration(
+    hintText: 'Buscar productos...',
+    hintStyle: TextStyle(
+    color: secondaryColor.withOpacity(0.7),
+    fontSize: 16,
+    ),
+    border: InputBorder.none,
+    ),
+    style: TextStyle(color: primaryColor),
+    autofocus: true,
+    ),
+    actions: [
+    IconButton(
+    icon: Icon(
+    isSearching ? Icons.close : Icons.search,
+    color: primaryColor,
+    ),
+    onPressed: () {
+    setState(() {
+    isSearching = !isSearching;
+    if (!isSearching) {
+    _searchController.clear();
+    productosFiltrados = List.from(productos);
+    }
+    });
+    },
+    ),
+    IconButton(
+    icon: Icon(Icons.exit_to_app, color: primaryColor),
+    onPressed: () async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
+    if (!mounted) return;
+    Navigator.of(context).pushReplacementNamed('/login');
+    },
+    ),
+    ],
+    ),
+    body: RefreshIndicator(
+    onRefresh: _refreshProductos,
+    color: primaryColor,
+    child: productosFiltrados.isEmpty && !isLoading
+    ? Center(
+    child: Text('No hay productos disponibles', style: subtitleStyle),
+    )
+        : GridView.builder(
+    controller: _scrollController,
+    padding: const EdgeInsets.all(16),
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+    crossAxisCount: 2,
+    childAspectRatio: 0.7,
+    crossAxisSpacing: 16,
+    mainAxisSpacing: 16,
+    ),
+    itemCount: productosFiltrados.length + (isLoading && !isSearching ? 1 : 0),
+    itemBuilder: (context, index) {
+    if (index == productosFiltrados.length) {
+    return const Center(
+    child: CircularProgressIndicator(color: primaryColor),
+    );
+    }
+
+    final producto = productosFiltrados[index];
+    return Container(
+    decoration: BoxDecoration(
+    borderRadius: BorderRadius.circular(16),
+    boxShadow: [
+    BoxShadow(
+    color: primaryColor.withOpacity(0.1),
+    spreadRadius: 1,
+    blurRadius: 10,
+    offset: const Offset(0, 4),
+    ),
+    ],
+    ),
+    child: Card(
+    elevation: 0,
+    color: cardColor,
+    shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(16),
+    ),
+    child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+    Stack(
+    children: [
+    Container(
+    height: 180,
+    decoration: BoxDecoration(
+    borderRadius: const BorderRadius.vertical(
+    top: Radius.circular(16),
+    ),
+    ),
+    child: ClipRRect(
+    borderRadius: const BorderRadius.vertical(
+    top: Radius.circular(16),
+    ),
+    child: producto['imagen_principal'] != null
+    ? Image.network(
+    producto['imagen_principal'],
+    width: double.infinity,
+    height: 180,
+    fit: BoxFit.cover,
+    loadingBuilder: (context, child, loadingProgress) {
+    if (loadingProgress == null) return child;
+    return Container(
+    color: accentColor.withOpacity(0.3),
+    child: Center(
+    child: CircularProgressIndicator(
+    value: loadingProgress.expectedTotalBytes != null
+    ? loadingProgress.cumulativeBytesLoaded /
+    loadingProgress.expectedTotalBytes!
+        : null,
+    color: primaryColor,
+    ),
+    ),
+    );
+    },
+    errorBuilder: (context, error, stackTrace) {
+    return Container(
+    color: accentColor.withOpacity(0.3),
+    child: Center(
+    child: Icon(
+    Icons.image_not_supported_rounded,
+    size: 40,
+    color: primaryColor.withOpacity(0.5),
+    ),
+    ),
+    );
+    },
+    )
+        : Container(
+    color: accentColor.withOpacity(0.3),
+    child: Center(
+    child: Icon(
+    Icons.image_rounded,
+    size: 40,
+    color: primaryColor.withOpacity(0.5),
+    ),
+    ),
+    ),
+    ),
+    ),
+    if (producto['es_promocion'] == 1)
+    Positioned(
+    top: 12,
+    right: 12,
+    child: Container(
+    padding: const EdgeInsets.symmetric(
+    horizontal: 12,
+    vertical: 6,
+    ),
+    decoration: BoxDecoration(
+    color: primaryColor,
+    borderRadius: BorderRadius.circular(20),
+    ),
+    child: const Text(
+    'Promoción',
+    style: TextStyle(
+    color: Colors.white,
+    fontSize: 12,
+    fontWeight: FontWeight.bold,
+    ),
+    ),
+    ),
+    ),
+    ],
+    ),
+    Padding(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+    Text(
+    producto['nombre'] ?? 'Sin nombre',
+    style: const TextStyle(
+    fontSize: 18,
+    fontWeight: FontWeight.bold,
+    color: primaryColor,
+    height: 1.2,
+    ),
+    maxLines: 2,
+    overflow: TextOverflow.ellipsis,
+    ),
+      const SizedBox(height: 8),
+      Text(
+        producto['descripcion'] ?? 'Sin descripción',
+        style: TextStyle(
+          fontSize: 14,
+          color: secondaryColor.withOpacity(0.8),
+          height: 1.3,
         ),
-        actions: [
-          IconButton(
-            icon: Icon(isSearching ? Icons.close : Icons.search, color: textColor),
-            onPressed: () {
-              setState(() {
-                isSearching = !isSearching;
-                if (!isSearching) {
-                  _searchController.clear();
-                  productosFiltrados = List.from(productos);
-                }
-              });
-            },
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+      const SizedBox(height: 12),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '\$${formatPrice(producto['precio'])}',
+                style: priceStyle,
+              ),
+              Text(
+                'Material: ${producto['tipo_material'] ?? 'N/A'}',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: secondaryColor.withOpacity(0.7),
+                ),
+              ),
+            ],
           ),
-          IconButton(
-            icon: Icon(Icons.exit_to_app, color: textColor),
-            onPressed: () async {
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.remove('auth_token');
-              if (!mounted) return;
-              Navigator.of(context).pushReplacementNamed('/login');
-            },
+          Container(
+            decoration: BoxDecoration(
+              color: primaryColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(
+                Icons.shopping_cart_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+              onPressed: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '${producto['nombre']} agregado al carrito',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    backgroundColor: primaryColor,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: const BorderRadius.all(Radius.circular(10)),
+                    ),
+                    margin: const EdgeInsets.all(16),
+                  ),
+                );
+              },
+            ),
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _refreshProductos,
-        color: primaryColor,
-        child: productosFiltrados.isEmpty && !isLoading
-            ? Center(
-          child: Text('No hay productos disponibles', style: subtitleStyle),
-        )
-            : GridView.builder(
-          controller: _scrollController,
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.75,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-          ),
-          itemCount: productosFiltrados.length + (isLoading && !isSearching ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index == productosFiltrados.length) {
-              return const Center(
-                child: CircularProgressIndicator(color: primaryColor),
-              );
-            }
-
-            final producto = productosFiltrados[index];
-            return Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Esta es la parte que muestra la imagen desde la API
-                  Container(
-                    height: 150, // Aumentamos un poco la altura para mejor visualización
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(12),
-                      ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(12),
-                      ),
-                      child: producto['imagen_principal'] != null
-                          ? Image.network(
-                        producto['imagen_principal'],
-                        width: double.infinity,
-                        height: 150,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                  loadingProgress.expectedTotalBytes!
-                                  : null,
-                              color: secondaryColor,
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          print('Error loading image: $error');
-                          return Container(
-                            color: secondaryColor.withOpacity(0.1),
-                            child: Center(
-                              child: Icon(
-                                Icons.image_not_supported,
-                                size: 40,
-                                color: secondaryColor.withOpacity(0.5),
-                              ),
-                            ),
-                          );
-                        },
-                      )
-                          : Container(
-                        color: secondaryColor.withOpacity(0.1),
-                        child: Center(
-                          child: Icon(
-                            Icons.image,
-                            size: 40,
-                            color: secondaryColor.withOpacity(0.5),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          producto['nombre'] ?? 'Sin nombre',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: textColor,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          producto['descripcion'] ?? 'Sin descripción',
-                          style: subtitleStyle,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '\$${formatPrice(producto['precio'])}',
-                              style: priceStyle,
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.shopping_cart, color: primaryColor),
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('${producto['nombre']} agregado al carrito'),
-                                    backgroundColor: primaryColor,
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
+    ],
+    ),
+    ),
+    ],
+    ),
+    ),
+    );
+    },
+    ),
+    ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Carrito de compras próximamente'),
+            SnackBar(
+              content: const Text('Carrito de compras próximamente'),
               backgroundColor: primaryColor,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: const BorderRadius.all(Radius.circular(10)),
+              ),
+              margin: const EdgeInsets.all(16),
             ),
           );
         },
