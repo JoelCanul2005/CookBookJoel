@@ -22,6 +22,7 @@ class cookbook_joel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner:false,
       title: 'Cookbook_Joel',
       theme: ThemeData(
         useMaterial3: true,
@@ -36,6 +37,7 @@ class cookbook_joel extends StatelessWidget {
         textTheme: GoogleFonts.poppinsTextTheme(),
       ),
       home: const HomePage(),
+
     );
   }
 }
@@ -103,7 +105,14 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
     },
     {
       'title': 'Persistencia',
-      'icon': 'assets/lottie/persistence.json', // Necesitarás agregar este archivo
+      'icon': 'assets/lottie/persistence.json',
+      'route': const PersistencePage(),
+      'color': Colors.green,
+      'description': 'SQLite, archivos y preferencias',
+    },
+    {
+      'title': 'BetaHome',
+      'icon': 'assets/lottie/persistence.json',
       'route': const PersistencePage(),
       'color': Colors.green,
       'description': 'SQLite, archivos y preferencias',
