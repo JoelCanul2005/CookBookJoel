@@ -82,6 +82,7 @@ class _RentadoresHomePageState extends State<RentadoresHomePage> {
       }
     });
   }
+
   void _onScroll() {
     if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
       if (!isLoading && hasMoreProducts && !isSearching) {
@@ -164,274 +165,341 @@ class _RentadoresHomePageState extends State<RentadoresHomePage> {
     return '0.00';
   }
 
+  Future<void> _showProductDetails(int id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('auth_token');
+
+    if (token == null) throw Exception('No se encontró el token de autenticación');
+
+    final response = await http.get(
+      Uri.parse('https://apirentz2-1.onrender.com/api/productos/$id'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final producto = json.decode(response.body);
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text(producto['nombre'], style: titleStyle),
+            content: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (producto['imagen_principal'] != null)
+                    Image.network(
+                      producto['imagen_principal'],
+                      width: double.infinity,
+                      height: 180,
+                      fit: BoxFit.cover,
+                    ),
+                  const SizedBox(height: 16),
+                  Text(producto['descripcion'], style: subtitleStyle),
+                  const SizedBox(height: 16),
+                  Text('\$${formatPrice(producto['precio'])}', style: priceStyle),
+                  const SizedBox(height: 16),
+                  Text('Material: ${producto['tipo_material'] ?? 'N/A'}', style: subtitleStyle),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cerrar'),
+              ),
+            ],
+          );
+        },
+      );
+    } else if (response.statusCode == 404) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Producto no encontrado'),
+          backgroundColor: primaryColor,
+        ),
+      );
+    } else if (response.statusCode == 401) {
+      Navigator.of(context).pushReplacementNamed('/login');
+    } else {
+      throw Exception('Error al cargar el producto');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: backgroundColor,
-        appBar: AppBar(
+      backgroundColor: backgroundColor,
+      appBar: AppBar(
         elevation: 0,
         backgroundColor: cardColor,
         title: !isSearching
-        ? Text('Explora Productos', style: titleStyle)
-        : TextField(
-    controller: _searchController,
-    decoration: InputDecoration(
-    hintText: 'Buscar productos...',
-    hintStyle: TextStyle(
-    color: secondaryColor.withOpacity(0.7),
-    fontSize: 16,
-    ),
-    border: InputBorder.none,
-    ),
-    style: TextStyle(color: primaryColor),
-    autofocus: true,
-    ),
-    actions: [
-    IconButton(
-    icon: Icon(
-    isSearching ? Icons.close : Icons.search,
-    color: primaryColor,
-    ),
-    onPressed: () {
-    setState(() {
-    isSearching = !isSearching;
-    if (!isSearching) {
-    _searchController.clear();
-    productosFiltrados = List.from(productos);
-    }
-    });
-    },
-    ),
-    IconButton(
-    icon: Icon(Icons.exit_to_app, color: primaryColor),
-    onPressed: () async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('auth_token');
-    if (!mounted) return;
-    Navigator.of(context).pushReplacementNamed('/login');
-    },
-    ),
-    ],
-    ),
-    body: RefreshIndicator(
-    onRefresh: _refreshProductos,
-    color: primaryColor,
-    child: productosFiltrados.isEmpty && !isLoading
-    ? Center(
-    child: Text('No hay productos disponibles', style: subtitleStyle),
-    )
-        : GridView.builder(
-    controller: _scrollController,
-    padding: const EdgeInsets.all(16),
-    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-    crossAxisCount: 2,
-    childAspectRatio: 0.7,
-    crossAxisSpacing: 16,
-    mainAxisSpacing: 16,
-    ),
-    itemCount: productosFiltrados.length + (isLoading && !isSearching ? 1 : 0),
-    itemBuilder: (context, index) {
-    if (index == productosFiltrados.length) {
-    return const Center(
-    child: CircularProgressIndicator(color: primaryColor),
-    );
-    }
-
-    final producto = productosFiltrados[index];
-    return Container(
-    decoration: BoxDecoration(
-    borderRadius: BorderRadius.circular(16),
-    boxShadow: [
-    BoxShadow(
-    color: primaryColor.withOpacity(0.1),
-    spreadRadius: 1,
-    blurRadius: 10,
-    offset: const Offset(0, 4),
-    ),
-    ],
-    ),
-    child: Card(
-    elevation: 0,
-    color: cardColor,
-    shape: RoundedRectangleBorder(
-    borderRadius: BorderRadius.circular(16),
-    ),
-    child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-    Stack(
-    children: [
-    Container(
-    height: 180,
-    decoration: BoxDecoration(
-    borderRadius: const BorderRadius.vertical(
-    top: Radius.circular(16),
-    ),
-    ),
-    child: ClipRRect(
-    borderRadius: const BorderRadius.vertical(
-    top: Radius.circular(16),
-    ),
-    child: producto['imagen_principal'] != null
-    ? Image.network(
-    producto['imagen_principal'],
-    width: double.infinity,
-    height: 180,
-    fit: BoxFit.cover,
-    loadingBuilder: (context, child, loadingProgress) {
-    if (loadingProgress == null) return child;
-    return Container(
-    color: accentColor.withOpacity(0.3),
-    child: Center(
-    child: CircularProgressIndicator(
-    value: loadingProgress.expectedTotalBytes != null
-    ? loadingProgress.cumulativeBytesLoaded /
-    loadingProgress.expectedTotalBytes!
-        : null,
-    color: primaryColor,
-    ),
-    ),
-    );
-    },
-    errorBuilder: (context, error, stackTrace) {
-    return Container(
-    color: accentColor.withOpacity(0.3),
-    child: Center(
-    child: Icon(
-    Icons.image_not_supported_rounded,
-    size: 40,
-    color: primaryColor.withOpacity(0.5),
-    ),
-    ),
-    );
-    },
-    )
-        : Container(
-    color: accentColor.withOpacity(0.3),
-    child: Center(
-    child: Icon(
-    Icons.image_rounded,
-    size: 40,
-    color: primaryColor.withOpacity(0.5),
-    ),
-    ),
-    ),
-    ),
-    ),
-    if (producto['es_promocion'] == 1)
-    Positioned(
-    top: 12,
-    right: 12,
-    child: Container(
-    padding: const EdgeInsets.symmetric(
-    horizontal: 12,
-    vertical: 6,
-    ),
-    decoration: BoxDecoration(
-    color: primaryColor,
-    borderRadius: BorderRadius.circular(20),
-    ),
-    child: const Text(
-    'Promoción',
-    style: TextStyle(
-    color: Colors.white,
-    fontSize: 12,
-    fontWeight: FontWeight.bold,
-    ),
-    ),
-    ),
-    ),
-    ],
-    ),
-    Padding(
-    padding: const EdgeInsets.all(16),
-    child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-    Text(
-    producto['nombre'] ?? 'Sin nombre',
-    style: const TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.bold,
-    color: primaryColor,
-    height: 1.2,
-    ),
-    maxLines: 2,
-    overflow: TextOverflow.ellipsis,
-    ),
-      const SizedBox(height: 8),
-      Text(
-        producto['descripcion'] ?? 'Sin descripción',
-        style: TextStyle(
-          fontSize: 14,
-          color: secondaryColor.withOpacity(0.8),
-          height: 1.3,
-        ),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
-      const SizedBox(height: 12),
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '\$${formatPrice(producto['precio'])}',
-                style: priceStyle,
-              ),
-              Text(
-                'Material: ${producto['tipo_material'] ?? 'N/A'}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: secondaryColor.withOpacity(0.7),
-                ),
-              ),
-            ],
+            ? Text('Explora Productos', style: titleStyle)
+            : TextField(
+          controller: _searchController,
+          decoration: InputDecoration(
+            hintText: 'Buscar productos...',
+            hintStyle: TextStyle(
+              color: secondaryColor.withOpacity(0.7),
+              fontSize: 16,
+            ),
+            border: InputBorder.none,
           ),
-          Container(
-            decoration: BoxDecoration(
+          style: TextStyle(color: primaryColor),
+          autofocus: true,
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              isSearching ? Icons.close : Icons.search,
               color: primaryColor,
-              borderRadius: BorderRadius.circular(12),
             ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.shopping_cart_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '${producto['nombre']} agregado al carrito',
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    backgroundColor: primaryColor,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: const BorderRadius.all(Radius.circular(10)),
-                    ),
-                    margin: const EdgeInsets.all(16),
-                  ),
-                );
-              },
-            ),
+            onPressed: () {
+              setState(() {
+                isSearching = !isSearching;
+                if (!isSearching) {
+                  _searchController.clear();
+                  productosFiltrados = List.from(productos);
+                }
+              });
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.exit_to_app, color: primaryColor),
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove('auth_token');
+              if (!mounted) return;
+              Navigator.of(context).pushReplacementNamed('/login');
+            },
           ),
         ],
       ),
-    ],
-    ),
-    ),
-    ],
-    ),
-    ),
-    );
-    },
-    ),
-    ),
+      body: RefreshIndicator(
+        onRefresh: _refreshProductos,
+        color: primaryColor,
+        child: productosFiltrados.isEmpty && !isLoading
+            ? Center(
+          child: Text('No hay productos disponibles', style: subtitleStyle),
+        )
+            : GridView.builder(
+          controller: _scrollController,
+          padding: const EdgeInsets.all(16),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.7,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          itemCount: productosFiltrados.length + (isLoading && !isSearching ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index == productosFiltrados.length) {
+              return const Center(
+                child: CircularProgressIndicator(color: primaryColor),
+              );
+            }
+
+            final producto = productosFiltrados[index];
+            return GestureDetector(
+              onTap: () => _showProductDetails(producto['id']),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryColor.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Card(
+                  elevation: 0,
+                  color: cardColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Stack(
+                        children: [
+                          Container(
+                            height: 180,
+                            decoration: BoxDecoration(
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(16),
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(16),
+                              ),
+                              child: producto['imagen_principal'] != null
+                                  ? Image.network(
+                                producto['imagen_principal'],
+                                width: double.infinity,
+                                height: 180,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Container(
+                                    color: accentColor.withOpacity(0.3),
+                                    child: Center(
+                                      child: CircularProgressIndicator(
+                                        value: loadingProgress.expectedTotalBytes != null
+                                            ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                            : null,
+                                        color: primaryColor,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    color: accentColor.withOpacity(0.3),
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.image_not_supported_rounded,
+                                        size: 40,
+                                        color: primaryColor.withOpacity(0.5),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              )
+                                  : Container(
+                                color: accentColor.withOpacity(0.3),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.image_rounded,
+                                    size: 40,
+                                    color: primaryColor.withOpacity(0.5),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (producto['es_promocion'] == 1)
+                            Positioned(
+                              top: 12,
+                              right: 12,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: primaryColor,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Text(
+                                  'Promoción',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              producto['nombre'] ?? 'Sin nombre',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: primaryColor,
+                                height: 1.2,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              producto['descripcion'] ?? 'Sin descripción',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: secondaryColor.withOpacity(0.8),
+                                height: 1.3,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '\$${formatPrice(producto['precio'])}',
+                                      style: priceStyle,
+                                    ),
+                                    Text(
+                                      'Material: ${producto['tipo_material'] ?? 'N/A'}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: secondaryColor.withOpacity(0.7),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: primaryColor,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(
+                                      Icons.shopping_cart_rounded,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                    onPressed: () {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            '${producto['nombre']} agregado al carrito',
+                                            style: const TextStyle(color: Colors.white),
+                                          ),
+                                          backgroundColor: primaryColor,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: const BorderRadius.all(Radius.circular(10)),
+                                          ),
+                                          margin: const EdgeInsets.all(16),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           ScaffoldMessenger.of(context).showSnackBar(

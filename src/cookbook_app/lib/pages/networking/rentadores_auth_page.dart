@@ -139,7 +139,7 @@ class _RentadoresAuthPageState extends State<RentadoresAuthPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE8ECF4),
+      backgroundColor: const Color(0xFFCAA26D),
       body: Stack(
         children: [
           // Fondo con degradado
@@ -171,9 +171,10 @@ class _RentadoresAuthPageState extends State<RentadoresAuthPage>
                       parent: _controller,
                       curve: Curves.easeOut,
                     )),
-                    child: Lottie.asset(
-                      'assets/lottie/networking.json', // Asegúrate de tener esta animación
+                    child: Image.asset(
+                      'assets/images/rentz.png', // Ruta de tu imagen
                       height: 200,
+                      fit: BoxFit.contain, // Ajusta la imagen al espacio disponible
                     ),
                   ),
 
@@ -185,6 +186,8 @@ class _RentadoresAuthPageState extends State<RentadoresAuthPage>
                     style: GoogleFonts.poppins(
                       fontSize: 32,
                       fontWeight: FontWeight.bold,
+                      color: Color.fromRGBO(81, 27, 0, 1.0),
+
                     ),
                   ),
 
@@ -192,13 +195,13 @@ class _RentadoresAuthPageState extends State<RentadoresAuthPage>
 
                   // Formulario con efecto glassmorphism
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(15),
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                       child: Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Color.fromRGBO(202, 142, 109, 1.0),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: Colors.white.withOpacity(0.3),
@@ -211,6 +214,8 @@ class _RentadoresAuthPageState extends State<RentadoresAuthPage>
                                 controller: _nombreController,
                                 hint: 'Nombre completo',
                                 icon: Icons.person_outline,
+
+
                               ),
                               const SizedBox(height: 15),
                             ],
@@ -219,6 +224,7 @@ class _RentadoresAuthPageState extends State<RentadoresAuthPage>
                               controller: _usernameController,
                               hint: 'Username',
                               icon: Icons.account_circle_outlined,
+
                             ),
                             const SizedBox(height: 15),
 
@@ -239,7 +245,7 @@ class _RentadoresAuthPageState extends State<RentadoresAuthPage>
                                     ? null
                                     : () => isLogin ? _handleLogin() : _handleRegister(),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
+                                  backgroundColor:  const Color(0xFFFFC107),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(15),
                                   ),
@@ -252,7 +258,7 @@ class _RentadoresAuthPageState extends State<RentadoresAuthPage>
                                   style: GoogleFonts.poppins(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                                    color: Color.fromRGBO(81, 27, 0, 1.0), // Rojo anaranjado personalizado,
                                   ),
                                 ),
                               ),
@@ -279,7 +285,7 @@ class _RentadoresAuthPageState extends State<RentadoresAuthPage>
                           ? '¿No tienes cuenta? Regístrate'
                           : '¿Ya tienes cuenta? Inicia sesión',
                       style: GoogleFonts.poppins(
-                        color: Colors.black87,
+                        color: Color.fromRGBO(81, 27, 0, 1.0),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -299,27 +305,49 @@ class _RentadoresAuthPageState extends State<RentadoresAuthPage>
     required IconData icon,
     bool isPassword = false,
   }) {
-    return TextField(
-      controller: controller,
-      obscureText: isPassword,
-      decoration: InputDecoration(
-        hintText: hint,
-        prefixIcon: Icon(icon, color: Colors.black54),
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.5),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(15),
-          borderSide: const BorderSide(color: Colors.blue),
-        ),
-      ),
+    // Estado para controlar si la contraseña es visible o no
+    bool isPasswordVisible = false;
+
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return TextField(
+          controller: controller,
+          obscureText: isPassword && !isPasswordVisible, // Oculta la contraseña si es un campo de contraseña y no está visible
+          style: TextStyle(color: Colors.brown),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(color: Colors.brown),
+            prefixIcon: Icon(icon, color: Colors.black54),
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.5),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide(color: Colors.white.withOpacity(0.5)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide(color: Colors.blue),
+            ),
+            // Agregar el botón de ojo para mostrar/ocultar la contraseña
+            suffixIcon: isPassword
+                ? IconButton(
+              icon: Icon(
+                isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                color: Colors.black54,
+              ),
+              onPressed: () {
+                setState(() {
+                  isPasswordVisible = !isPasswordVisible;
+                });
+              },
+            )
+                : null,
+          ),
+        );
+      },
     );
-  }
-}
+  }}
