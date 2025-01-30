@@ -11,19 +11,22 @@ import 'package:cookbook_joel/pages/navigation_page.dart';
 import 'package:cookbook_joel/pages/networking/main_networking.dart';
 import 'package:cookbook_joel/pages/animations_page.dart';
 import 'package:cookbook_joel/pages/persistence_page.dart';
+import 'package:cookbook_joel/pages/rentas_page.dart'; // Importa tus páginas
+import 'package:cookbook_joel/pages/carrito_page.dart';
+import 'package:cookbook_joel/pages/perfil_page.dart';
 
 void main() {
-  runApp(const cookbook_joel());
+  runApp(const CookbookJoel());
 }
 
-class cookbook_joel extends StatelessWidget {
-  const cookbook_joel({super.key});
+class CookbookJoel extends StatelessWidget {
+  const CookbookJoel({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner:false,
-      title: 'Cookbook_Joel',
+      debugShowCheckedModeBanner: false,
+      title: 'Rentz',
       theme: ThemeData(
         useMaterial3: true,
         colorSchemeSeed: Colors.indigo,
@@ -37,7 +40,6 @@ class cookbook_joel extends StatelessWidget {
         textTheme: GoogleFonts.poppinsTextTheme(),
       ),
       home: const HomePage(),
-
     );
   }
 }
@@ -52,72 +54,20 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   bool _isLoading = true;
+  int _selectedIndex = 0;
 
-  final categories = [
-    {
-      'title': 'Diseño IU',
-      'icon': 'assets/lottie/design.json',
-      'route': const DesignPage(),
-      'color': Colors.blue,
-      'description': '',
-    },
-    {
-      'title': 'Formulario',
-      'icon': 'assets/lottie/forms.json',
-      'route': const FormsPage(),
-      'color': Colors.green,
-      'description': '',
-    },
-    {
-      'title': 'Imagenes Dinamicas',
-      'icon': 'assets/lottie/images.json',
-      'route': const ImagesPage(),
-      'color': Colors.purple,
-      'description': '',
-    },
-    {
-      'title': 'Listas',
-      'icon': 'assets/lottie/lists.json',
-      'route': const ListsPage(),
-      'color': Colors.orange,
-      'description': '',
-    },
-    {
-      'title': 'Navegacion',
-      'icon': 'assets/lottie/navigation.json',
-      'route': const NavigationPage(),
-      'color': Colors.red,
-      'description': '',
-    },
-    {
-      'title': 'Networking',
-      'icon': 'assets/lottie/networking.json',
-      'route': const MainNetworking(),
-      'color': Colors.teal,
-      'description': 'Rentadores y Rentadoras',
-    },
-    {
-      'title': 'Animaciones',
-      'icon': 'assets/lottie/animations.json',
-      'route': const AnimationsPage(),
-      'color': Colors.pink,
-      'description': 'Ejemplos de animaciones en Flutter',
-    },
-    {
-      'title': 'Persistencia',
-      'icon': 'assets/lottie/persistence.json',
-      'route': const PersistencePage(),
-      'color': Colors.green,
-      'description': 'SQLite, archivos y preferencias',
-    },
-    {
-      'title': 'BetaHome',
-      'icon': 'assets/lottie/persistence.json',
-      'route': const PersistencePage(),
-      'color': Colors.green,
-      'description': 'SQLite, archivos y preferencias',
-    },
+  final List<Widget> _pages = [
+    const HomeContent(), // Contenido principal de la página de inicio
+    const RentasPage(), // Página de rentas
+    const CarritoPage(), // Página de carrito
+    const PerfilPage(), // Página de perfil
   ];
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
 
   @override
   void initState() {
@@ -145,97 +95,167 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar.large(
-            expandedHeight: 200,
-            floating: true,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              title: AnimatedTextKit(
-                animatedTexts: [
-                  TypewriterAnimatedText(
-                    'CookBook_Joel',
-                    textStyle: GoogleFonts.poppins(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-                totalRepeatCount: 1,
-              ),
-              background: ShaderMask(
-                shaderCallback: (bounds) {
-                  return LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withAlpha(204), // 0.8 * 255
-                    ],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ).createShader(bounds);
-                },
-                blendMode: BlendMode.darken,
-                child: Image.network(
-                  'https://picsum.photos/800/400',
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Inicio',
           ),
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: _isLoading
-                ? SliverToBoxAdapter(
-              child: _buildShimmerLoading(),
-            )
-                : SliverGrid(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 0.8,
-              ),
-              delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                  final category = categories[index];
-                  return _buildCategoryCard(category);
-                },
-                childCount: categories.length,
-              ),
-            ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.local_shipping),
+            label: 'Rentas',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart),
+            label: 'Carrito',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Perfil',
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildShimmerLoading() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.8,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-        ),
-        itemCount: 6,
-        itemBuilder: (_, __) => Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+class HomeContent extends StatelessWidget {
+  const HomeContent({super.key});
+
+  final categories = const [
+    {
+      'title': 'Diseño IU',
+      'icon': 'assets/lottie/design.json',
+      'route': DesignPage(),
+      'color': Colors.blue,
+      'description': '',
+    },
+    {
+      'title': 'Formulario',
+      'icon': 'assets/lottie/forms.json',
+      'route': FormsPage(),
+      'color': Colors.green,
+      'description': '',
+    },
+    {
+      'title': 'Imagenes Dinamicas',
+      'icon': 'assets/lottie/images.json',
+      'route': ImagesPage(),
+      'color': Colors.purple,
+      'description': '',
+    },
+    {
+      'title': 'Listas',
+      'icon': 'assets/lottie/lists.json',
+      'route': ListsPage(),
+      'color': Colors.orange,
+      'description': '',
+    },
+    {
+      'title': 'Navegacion',
+      'icon': 'assets/lottie/navigation.json',
+      'route': NavigationPage(),
+      'color': Colors.red,
+      'description': '',
+    },
+    {
+      'title': 'Networking',
+      'icon': 'assets/lottie/networking.json',
+      'route': MainNetworking(),
+      'color': Colors.teal,
+      'description': 'Rentadores y Rentadoras',
+    },
+    {
+      'title': 'Animaciones',
+      'icon': 'assets/lottie/animations.json',
+      'route': AnimationsPage(),
+      'color': Colors.pink,
+      'description': 'Ejemplos de animaciones en Flutter',
+    },
+    {
+      'title': 'Persistencia',
+      'icon': 'assets/lottie/persistence.json',
+      'route': PersistencePage(),
+      'color': Colors.green,
+      'description': 'SQLite, archivos y preferencias',
+    },
+    {
+      'title': 'BetaHome',
+      'icon': 'assets/lottie/persistence.json',
+      'route': PersistencePage(),
+      'color': Colors.green,
+      'description': 'SQLite, archivos y preferencias',
+    },
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      slivers: [
+        SliverAppBar.large(
+          expandedHeight: 200,
+          floating: true,
+          pinned: true,
+          flexibleSpace: FlexibleSpaceBar(
+            title: AnimatedTextKit(
+              animatedTexts: [
+                TypewriterAnimatedText(
+                  'CookBook_Joel',
+                  textStyle: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+              totalRepeatCount: 1,
+            ),
+            background: ShaderMask(
+              shaderCallback: (bounds) {
+                return LinearGradient(
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withAlpha(204), // 0.8 * 255
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ).createShader(bounds);
+              },
+              blendMode: BlendMode.darken,
+              child: Image.network(
+                'https://picsum.photos/800/400',
+                fit: BoxFit.cover,
+              ),
+            ),
           ),
         ),
-      ),
+        SliverPadding(
+          padding: const EdgeInsets.all(16),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              childAspectRatio: 0.8,
+            ),
+            delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                final category = categories[index];
+                return _buildCategoryCard(category, context);
+              },
+              childCount: categories.length,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildCategoryCard(Map<String, dynamic> category) {
+  Widget _buildCategoryCard(Map<String, dynamic> category, BuildContext context) {
     return Card(
       elevation: 8,
       shadowColor: (category['color'] as Color).withAlpha(102), // 0.4 * 255
@@ -268,12 +288,6 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                 Lottie.asset(
                   category['icon'] as String,
                   height: 80,
-                  controller: _controller,
-                  onLoaded: (composition) {
-                    _controller
-                      ..duration = composition.duration
-                      ..forward();
-                  },
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -302,5 +316,33 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         ),
       ),
     );
+  }
+}
+
+// Ejemplo de páginas vacías para rentas, carrito y perfil
+class RentasPage extends StatelessWidget {
+  const RentasPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(child: Text('Página de Rentas'));
+  }
+}
+
+class CarritoPage extends StatelessWidget {
+  const CarritoPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(child: Text('Página de Carrito'));
+  }
+}
+
+class PerfilPage extends StatelessWidget {
+  const PerfilPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(child: Text('Página de Perfil'));
   }
 }
