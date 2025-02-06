@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '';
+
 
 class RentadoresHomePage extends StatefulWidget {
+
   const RentadoresHomePage({super.key});
 
   @override
@@ -21,12 +24,13 @@ class _RentadoresHomePageState extends State<RentadoresHomePage> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
   bool isSearching = false;
+  int _selectedIndex = 0;
 
   // Colores del tema
   static const Color primaryColor = Color(0xFF511B00);
   static const Color secondaryColor = Color(0xFF8B4513);
   static const Color accentColor = Color(0xFFDDD9C6);
-  static const Color backgroundColor = Color(0xFFF5F2E8);
+  static const Color backgroundColor = Color(0xFFDDD9C6);
   static const Color textColor = Color(0xFF2C1810);
   static const Color cardColor = Color(0xFFFFFFFF);
 
@@ -183,26 +187,29 @@ class _RentadoresHomePageState extends State<RentadoresHomePage> {
       final producto = json.decode(response.body);
       showDialog(
         context: context,
+        barrierColor: Colors.transparent,
         builder: (context) {
           return AlertDialog(
+            backgroundColor: Color(0xFFDDD9C6),
             title: Text(producto['nombre'], style: titleStyle),
             content: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (producto['imagen_principal'] != null)
-                    Image.network(
-                      producto['imagen_principal'],
-                      width: double.infinity,
-                      height: 180,
-                      fit: BoxFit.cover,
+                    AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: Image.network(
+                        producto['imagen_principal'],
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   const SizedBox(height: 16),
                   Text(producto['descripcion'], style: subtitleStyle),
                   const SizedBox(height: 16),
                   Text('\$${formatPrice(producto['precio'])}', style: priceStyle),
                   const SizedBox(height: 16),
-                  Text('Material: ${producto['tipo_material'] ?? 'N/A'}', style: subtitleStyle),
+                  Text('Material: ${producto['tipo_material'] ?? ''}', style: subtitleStyle),
                 ],
               ),
             ),
@@ -210,9 +217,14 @@ class _RentadoresHomePageState extends State<RentadoresHomePage> {
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Cerrar'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.brown,
+                ),// Color del texto
               ),
             ],
           );
+
+
         },
       );
     } else if (response.statusCode == 404) {
@@ -231,17 +243,21 @@ class _RentadoresHomePageState extends State<RentadoresHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final crossAxisCount = screenWidth < 600 ? 1 : 4; // Ajusta el número de columnas basado en el ancho de la pantalla
+
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: cardColor,
         title: !isSearching
-            ? Text('Explora Productos', style: titleStyle)
+            ? Text('MOBILIARIA DISPONIBLE', style: titleStyle)
             : TextField(
           controller: _searchController,
           decoration: InputDecoration(
             hintText: 'Buscar productos...',
+
             hintStyle: TextStyle(
               color: secondaryColor.withOpacity(0.7),
               fontSize: 16,
@@ -288,19 +304,23 @@ class _RentadoresHomePageState extends State<RentadoresHomePage> {
             : GridView.builder(
           controller: _scrollController,
           padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
             childAspectRatio: 0.7,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
           ),
-          itemCount: productosFiltrados.length + (isLoading && !isSearching ? 1 : 0),
+          itemCount: productosFiltrados.length +
+              (isLoading && !isSearching ? 1 : 0),
           itemBuilder: (context, index) {
             if (index == productosFiltrados.length) {
               return const Center(
                 child: CircularProgressIndicator(color: primaryColor),
               );
             }
+
+
+
 
             final producto = productosFiltrados[index];
             return GestureDetector(
@@ -324,17 +344,13 @@ class _RentadoresHomePageState extends State<RentadoresHomePage> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Column(
+
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Stack(
                         children: [
-                          Container(
-                            height: 180,
-                            decoration: BoxDecoration(
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(16),
-                              ),
-                            ),
+                          AspectRatio(
+                            aspectRatio: 16 / 9,
                             child: ClipRRect(
                               borderRadius: const BorderRadius.vertical(
                                 top: Radius.circular(16),
@@ -342,17 +358,19 @@ class _RentadoresHomePageState extends State<RentadoresHomePage> {
                               child: producto['imagen_principal'] != null
                                   ? Image.network(
                                 producto['imagen_principal'],
-                                width: double.infinity,
-                                height: 180,
                                 fit: BoxFit.cover,
-                                loadingBuilder: (context, child, loadingProgress) {
+                                loadingBuilder: (context, child,
+                                    loadingProgress) {
                                   if (loadingProgress == null) return child;
                                   return Container(
                                     color: accentColor.withOpacity(0.3),
                                     child: Center(
+
                                       child: CircularProgressIndicator(
-                                        value: loadingProgress.expectedTotalBytes != null
-                                            ? loadingProgress.cumulativeBytesLoaded /
+                                        value: loadingProgress
+                                            .expectedTotalBytes != null
+                                            ? loadingProgress
+                                            .cumulativeBytesLoaded /
                                             loadingProgress.expectedTotalBytes!
                                             : null,
                                         color: primaryColor,
@@ -450,10 +468,11 @@ class _RentadoresHomePageState extends State<RentadoresHomePage> {
                                       style: priceStyle,
                                     ),
                                     Text(
-                                      'Material: ${producto['tipo_material'] ?? 'N/A'}',
+                                      'Material: ${producto['tipo_material'] ??
+                                          'N/A'}',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: secondaryColor.withOpacity(0.7),
+                                        color: Colors.brown,
                                       ),
                                     ),
                                   ],
@@ -470,16 +489,20 @@ class _RentadoresHomePageState extends State<RentadoresHomePage> {
                                       size: 20,
                                     ),
                                     onPressed: () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                      ScaffoldMessenger
+                                          .of(context)
+                                          .showSnackBar(
                                         SnackBar(
                                           content: Text(
                                             '${producto['nombre']} agregado al carrito',
-                                            style: const TextStyle(color: Colors.white),
+                                            style: const TextStyle(
+                                                color: Colors.white),
                                           ),
                                           backgroundColor: primaryColor,
                                           behavior: SnackBarBehavior.floating,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: const BorderRadius.all(Radius.circular(10)),
+                                            borderRadius: const BorderRadius
+                                                .all(Radius.circular(10)),
                                           ),
                                           margin: const EdgeInsets.all(16),
                                         ),
@@ -500,23 +523,75 @@ class _RentadoresHomePageState extends State<RentadoresHomePage> {
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Carrito de compras próximamente'),
-              backgroundColor: primaryColor,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: const BorderRadius.all(Radius.circular(10)),
+      // Variable de estado para rastrear el ítem seleccionado
+
+      bottomNavigationBar: BottomAppBar(
+        color: cardColor,
+        shape: const CircularNotchedRectangle(),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            IconButton(
+              icon: AnimatedContainer(
+                duration: Duration(milliseconds: 200), // Duración de la animación
+                transform: _selectedIndex == 0
+                    ? (Matrix4.identity()..scale(1.2)) // Escala el ícono si está seleccionado
+                    : Matrix4.identity(), // Sin escala si no está seleccionado
+                child: Icon(
+                  Icons.home,
+                  color: _selectedIndex == 0 ? Colors.yellow : primaryColor, // Cambia el color si está seleccionado
+                ),
               ),
-              margin: const EdgeInsets.all(16),
+              onPressed: () {
+                setState(() {
+                  _selectedIndex = 0; // Actualiza el índice seleccionado
+                });
+                // Navegar a la página de inicio
+                Navigator.of(context).pushReplacementNamed('/home.dart');
+              },
             ),
-          );
-        },
-        backgroundColor: primaryColor,
-        child: const Icon(Icons.shopping_cart_checkout),
+            IconButton(
+              icon: AnimatedContainer(
+                duration: Duration(milliseconds: 200),
+                transform: _selectedIndex == 1
+                    ? (Matrix4.identity()..scale(1.2)) // Escala el ícono si está seleccionado
+                    : Matrix4.identity(),
+                child: Icon(
+                  Icons.shopping_cart,
+                  color: _selectedIndex == 1 ? Colors.yellow : primaryColor,
+                ),
+              ),
+              onPressed: () {
+                setState(() {
+                  _selectedIndex = 1;
+                });
+                // Navegar a la página del carrito
+                // Navigator.of(context).pushReplacementNamed('/cart');
+              },
+            ),
+            IconButton(
+              icon: AnimatedContainer(
+                duration: Duration(milliseconds: 200),
+                transform: _selectedIndex == 2
+                    ? (Matrix4.identity()..scale(1.2)) // Escala el ícono si está seleccionado
+                    : Matrix4.identity(),
+                child: Icon(
+                  Icons.person,
+                  color: _selectedIndex == 2 ? Colors.yellow : primaryColor,
+                ),
+              ),
+              onPressed: () {
+                setState(() {
+                  _selectedIndex = 2;
+                });
+                // Navegar a la página de perfil
+                Navigator.of(context).pushReplacementNamed('/profile');
+              },
+            ),
+          ],
+        ),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }

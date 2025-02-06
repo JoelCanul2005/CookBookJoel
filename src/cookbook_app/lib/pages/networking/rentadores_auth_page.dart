@@ -350,4 +350,5 @@ class _RentadoresAuthPageState extends State<RentadoresAuthPage>
         );
       },
     );
-  }}
+  }
+}
